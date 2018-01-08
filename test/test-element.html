@@ -1,0 +1,42 @@
+<link rel="import" href="../stamp-content-mixin.html">
+
+<script>
+
+  class TestElement extends NLSElements.StampContentMixin(Polymer.Element) {
+    constructor () {
+      super()
+
+      // set up a promise that will resolve when connected
+      this._connectedPromise = new Promise((resolve, reject) => {
+        this._connectedResolve = resolve
+      })
+    }
+
+    static get properties() {
+      return {
+        prop1: String
+      }
+    }
+
+    get effects() {
+      return {
+        uppercase(str) { return (str || '').toUpperCase() }
+      }
+    }
+
+    connectedCallback() {
+      super.connectedCallback()
+      this._connectedResolve()
+    }
+
+    // invoke function when connected
+    //   (uses a promise to ensure function gets invoked even if already connected)
+    whenConnected(fn) {
+      this._connectedPromise.then(fn)
+    }
+
+  }
+
+  customElements.define('test-element', TestElement)
+
+</script>

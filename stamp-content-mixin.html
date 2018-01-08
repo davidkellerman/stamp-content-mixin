@@ -1,0 +1,176 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<dom-module id="stamp-content-mixin">
+  <script>
+    // @namespace NLSElements
+    if (!window.NLSElements) window.NLSElements = {}
+
+    const isIgnorable = (node) => {
+      return (node.nodeType == 8) || // a comment node
+        ((node.nodeType == 3) && !(/[^\t\n\r ]/.test(node.textContent))) // a text node, all whitespace
+    }
+    const isElement = (node, name) => {
+      return (node.nodeType == 1) && // an element node
+        (node.nodeName === name)
+    }
+
+    // effect to forward owner (element) property to data host (template)
+    const createForwardOwnerPropEffect = () => {
+      return function forwardOwnerProp(inst, prop, props) {
+        let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost
+        dataHost.set('_host_' + prop, props[prop])
+        // dataHost._setPendingPropertyOrPath('_host_' + prop, props[prop], true, false)
+          // this doesn't work -- the pending change never gets run
+      }
+    }
+
+    // effect to forward instance property to data host (template)
+    const createForwardInstancePropEffect = () => {
+      return function forwardInstanceProp(inst, prop, props) {
+        let dataHost = inst.__dataHost
+        dataHost.set('_host_' + prop, props[prop])
+      }
+    }
+
+
+    /** Mixin to stamp the element body into the document.
+     * Uses the element as the binding scope.
+     *
+     * Its intended use is in creating reusable container elements that
+     * define a collection of properties, and associated behaviors and
+     * effects, but allow the user to specify the content of the
+     * container.
+     *
+     * The body of the element (its light DOM) should consist of a
+     * single `<template>` element. The mixin will templatize it, stamp
+     * it, and insert it into the document.
+     *
+     * To provide effects methods for the stamped content, place them in
+     * an `effects` property of the element. (They'll be copied to the
+     * template constructor prototype, which will make them available to
+     * the stamped instance.)
+     *
+     * Example:
+     *
+     *     class StampedElement extends NLSElements.StampContentMixin(Polymer.Element) {
+     *       ...
+     *       get effects() {
+     *         return {
+     *           uppercase(str) { return (str || '').toUpperCase() }
+     *         }
+     *       }
+     *     }
+     *
+     * @polymer
+     * @mixinFunction
+     * @memberof NLSElements
+     * @demo demo/index.html
+     *
+     * BTW, the `Templatize` machinery stores "host" properties on the
+     * template object. Most of the work in synchronizing element
+     * properties with the template instance involves propagating
+     * changes to and from the template object. It seems like there
+     * ought to be a way to do the synchonization more directly, but
+     * the Polymer data binding is pretty byzantine.
+     *
+     * BTW, because the element definition does not specify a template
+     * (the whole idea of the mixin is that the instance provides the
+     * template), there is no `ready()` method invocation. Instead,
+     * template stamping happens in the `connectedCallback()`.
+     */
+    window.NLSElements.StampContentMixin = Polymer.dedupingMixin((base) => {
+      return class extends base {
+        constructor() {
+          super()
+        }
+
+        // @protected
+        connectedCallback() {
+          super.connectedCallback()
+
+          let context = this.__stampContentContext || (this.__stampContentContext = {})
+          if (!context.TemplateInstance) {
+            let template = this._getTemplate()
+            context.TemplateInstance = this._templatize(template)
+            this._addPropagateEffects()
+            let model = Object.assign(this._getPropValues(), {_nodeName: this.nodeName})
+            context.instance = new context.TemplateInstance(model)
+            this.parentNode.insertBefore(context.instance.root, this)
+          }
+        }
+
+        _getTemplate() {
+          let children = [], template
+          for (let node = this.firstChild, next; node; node = next) {
+            next = node.nextSibling
+            this.removeChild(node)
+            if (!isIgnorable(node)) children.push(node)
+          }
+          if ((children.length == 1) && isElement(children[0], 'TEMPLATE'))
+            template = children[0]
+          else
+            throw new Error(`<${this.localName}> must have a single <template> element as its body`)
+          return template
+        }
+
+        _templatize(template) {
+          let options = {
+                // TODO: may need to set mutableData: true (dom-if does)
+                forwardHostProp(prop, value) { // this == element when invoked
+                  // this is actually forwarding a template property to the instance
+                  let instance = this.__stampContentContext.instance
+                  if (instance) instance.forwardHostProp(prop, value)
+                  // forward template property to owner
+                  this.set(prop, value)
+                },
+                // TODO: not clear this ever gets invoked, since instanceProps is empty
+                notifyInstanceProp(instance, prop, value) { // this == element when invoked
+                  this.notifyPath(prop, value, true)
+                    // TODO: absolutely no clue as to whether setting of =true parameter is correct
+                },
+                instanceProps: {},
+                parentModel: true // decorate events with `model` property referencing template
+                  // TODO: is this right?
+              },
+              TemplateInstance = Polymer.Templatize.templatize(template, this, options)
+          if (this.effects)
+            Object.assign(TemplateInstance.prototype, this.effects)
+          return TemplateInstance
+        }
+
+        _getPropValues() {
+          let propValues = {}
+          for (let prop in this.constructor.properties)
+            propValues[prop] = this[prop]
+          return propValues
+        }
+
+        /*
+         * owner -> data host (template)
+         * instance -> data host (template)
+         */
+        _addPropagateEffects() {
+          let context = this.__stampContentContext,
+              prototype = context.TemplateInstance.prototype,
+              dataHost = prototype.__dataHost,
+              hostProps = prototype.__hostProps,
+              ownProps = this.constructor.properties
+          for (let prop in hostProps) {
+            if (prop in ownProps) {
+              this._addPropertyEffect(prop,
+                this.PROPERTY_EFFECT_TYPES.PROPAGATE,
+                {fn: createForwardOwnerPropEffect()})
+              prototype._addPropertyEffect(prop,
+                this.PROPERTY_EFFECT_TYPES.PROPAGATE,
+                {fn: createForwardInstancePropEffect()})
+              dataHost._setPendingPropertyOrPath('_host_' + prop, this[prop], false, true)
+                  // TODO: absolutely no clue as to whether setting of shouldNotify=false, isPathNotification=true parameters is correct
+            }
+          }
+        }
+
+      }
+    })
+
+  </script>
+</dom-module>

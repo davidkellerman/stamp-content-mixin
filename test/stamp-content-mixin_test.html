@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>StampContentMixin test</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <link rel="import" href="test-element.html">
+    <link rel="import" href="test-setter-element.html">
+  </head>
+  <body>
+
+    <test-fixture id="BasicTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="BasicTestFixtureInstance">{{prop1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="DefinedPropertyTestFixture">
+      <template>
+        <test-element prop1="new-prop1">
+          <template>
+            <div id="DefinedPropertyTestFixtureInstance">{{prop1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="ChangedPropertyTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="ChangedPropertyTestFixtureInstance">{{prop1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="ChangedInstancePropertyTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="ChangedInstancePropertyTestFixtureInstance">{{prop1}}</div>
+            <test-setter-element id="ChangedInstancePropertyTestFixtureSetter" notifying-prop="{{prop1}}"></test-setter-element>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="EffectTestFixture">
+      <template>
+        <test-element prop1="new-prop1">
+          <template>
+            <div id="EffectTestFixtureInstance">{{uppercase(prop1)}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <script>
+      suite('stamp-content-mixin', () => {
+
+        test('instantiating the element with default properties works', (done) => {
+          let element = fixture('BasicTestFixture')
+          element.whenConnected(() => {
+            flush(() => {
+              assert.equal(element.prop1, undefined)
+              let instance = document.querySelector('#BasicTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#BasicTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML.trim(), '', 'expected null prop1 to be stamped into div#BasicTestFixtureInstance')
+              done()
+            })
+          })
+        });
+
+        test('defining a property on the element works', (done) => {
+          let element = fixture('DefinedPropertyTestFixture'),
+              prop1Value = 'new-prop1'
+          element.whenConnected(() => {
+            flush(() => {
+              assert.equal(element.prop1, prop1Value)
+              let instance = document.querySelector('#DefinedPropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#DefinedPropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, prop1Value, `expected prop1 value '${prop1Value}' to be stamped into div#DefinedPropertyTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('changing a property on the element works', (done) => {
+          let element = fixture('ChangedPropertyTestFixture'),
+              prop1Value = 'new-prop1'
+          element.whenConnected(() => {
+            element.prop1 = prop1Value
+            flush(() => {
+              assert.equal(element.prop1, prop1Value)
+              let instance = document.querySelector('#ChangedPropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#ChangedPropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, prop1Value, `expected prop1 value '${prop1Value}' to be stamped into div#ChangedPropertyTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('changing a property on the instance works', (done) => {
+          let element = fixture('ChangedInstancePropertyTestFixture'),
+              prop1Value = 'new-prop1'
+          element.whenConnected(() => {
+            let instance = document.querySelector('#ChangedInstancePropertyTestFixtureInstance'),
+                setter = document.querySelector('#ChangedInstancePropertyTestFixtureSetter'),
+                dataHost = element.__stampContentContext.TemplateInstance.prototype.__dataHost,
+                model = Polymer.Templatize.modelForElement(dataHost, instance)
+            setter.notifyingProp = prop1Value
+            flush(() => {
+              assert.equal(element.prop1, prop1Value)
+              let instance = document.querySelector('#ChangedInstancePropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#ChangedInstancePropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, prop1Value, `expected prop1 value '${prop1Value}' to be stamped into div#ChangedInstancePropertyTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('a property effect works', (done) => {
+          let element = fixture('EffectTestFixture'),
+              prop1Value = 'NEW-PROP1'
+          element.whenConnected(() => {
+            flush(() => {
+debugger;
+              let instance = document.querySelector('#EffectTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#EffectTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, prop1Value, `expected prop1 value '${prop1Value}' to be stamped into div#EffectTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+      });
+    </script>
+
+  </body>
+</html>

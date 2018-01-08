@@ -1,0 +1,22 @@
+<link rel="import" href="../stamp-content-mixin.html">
+
+<script>
+
+  class TestSetterElement extends Polymer.Element {
+    constructor () {
+      super()
+    }
+
+    static get properties() {
+      return {
+        notifyingProp: {
+          type: String,
+          notify: true }
+      }
+    }
+
+  }
+
+  customElements.define('test-setter-element', TestSetterElement)
+
+</script>
