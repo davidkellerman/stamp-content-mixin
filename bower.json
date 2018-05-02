@@ -3,7 +3,7 @@
   "description": "Mixin to stamp the element content into the document using the element as the binding scope.",
   "main": "stamp-content-mixin.html",
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.0.0"
+    "polymer": "^2.6.0"
   },
   "devDependencies": {
     "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",
@@ -12,6 +12,6 @@
     "iron-component-page": "^3.0.1"
   },
   "resolutions": {
-    "polymer": "^2.0.0"
+    "polymer": "^2.6.0"
   }
 }

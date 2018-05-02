@@ -65,6 +65,47 @@
       </template>
     </test-fixture>
 
+    <test-fixture id="BasicSubpropertyTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="BasicSubpropertyTestFixtureInstance">{{prop2.p1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="DefinedSubpropertyTestFixture">
+      <template>
+        <test-element prop2="{&quot;p1&quot;:&quot;new-p1&quot;}">
+          <template>
+            <div id="DefinedSubpropertyTestFixtureInstance">{{prop2.p1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="ChangedSubpropertyTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="ChangedSubpropertyTestFixtureInstance">{{prop2.p1}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="ChangedInstanceSubpropertyTestFixture">
+      <template>
+        <test-element>
+          <template>
+            <div id="ChangedInstanceSubpropertyTestFixtureInstance">{{prop2.p1}}</div>
+            <test-setter-element id="ChangedInstanceSubpropertyTestFixtureSetter" notifying-prop="{{prop2.p1}}"></test-setter-element>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
     <script>
       suite('stamp-content-mixin', () => {
 
@@ -134,10 +175,73 @@
               prop1Value = 'NEW-PROP1'
           element.whenConnected(() => {
             flush(() => {
-debugger;
               let instance = document.querySelector('#EffectTestFixtureInstance')
               assert.isDefined(instance, 'expected div#EffectTestFixtureInstance to be defined')
               assert.equal(instance.innerHTML, prop1Value, `expected prop1 value '${prop1Value}' to be stamped into div#EffectTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('instantiating the element with default sub-properties works', (done) => {
+          let element = fixture('BasicSubpropertyTestFixture')
+          element.whenConnected(() => {
+            flush(() => {
+              assert.deepEqual(element.prop2, {})
+              let instance = document.querySelector('#BasicSubpropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#BasicSubpropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML.trim(), '', 'expected null prop2.p1 to be stamped into div#BasicSubpropertyTestFixtureInstance')
+              done()
+            })
+          })
+        });
+
+        test('defining a sub-property on the element works', (done) => {
+          let element = fixture('DefinedSubpropertyTestFixture'),
+              p1Value = 'new-p1'
+          element.whenConnected(() => {
+            flush(() => {
+              assert.deepEqual(element.prop2, {p1:p1Value})
+              let instance = document.querySelector('#DefinedSubpropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#DefinedSubpropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, p1Value, `expected prop2.p1 value '${p1Value}' to be stamped into div#DefinedSubpropertyTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('changing a sub-property on the element works', (done) => {
+          let element = fixture('ChangedSubpropertyTestFixture'),
+              p1Value = 'new-p1'
+          element.whenConnected(() => {
+            // element.prop2.p1 = p1Value
+            element.prop2.p1 = p1Value
+            element.notifyPath('prop2.p1')
+            flush(() => {
+              assert.deepEqual(element.prop2, {p1:p1Value})
+              let instance = document.querySelector('#ChangedSubpropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#ChangedSubpropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, p1Value, `expected prop2.p1 value '${p1Value}' to be stamped into div#ChangedSubpropertyTestFixtureInstance`)
+              done()
+            })
+          })
+        });
+
+        test('changing a sub-property on the instance works', (done) => {
+          let element = fixture('ChangedInstanceSubpropertyTestFixture'),
+              p1Value = 'new-p1'
+          element.whenConnected(() => {
+            let instance = document.querySelector('#ChangedInstanceSubpropertyTestFixtureInstance'),
+                setter = document.querySelector('#ChangedInstanceSubpropertyTestFixtureSetter'),
+                dataHost = element.__stampContentContext.TemplateInstance.prototype.__dataHost,
+                model = Polymer.Templatize.modelForElement(dataHost, instance)
+debugger;
+            setter.notifyingProp = p1Value
+            flush(() => {
+              assert.equal(element.prop2.p1, p1Value)
+              let instance = document.querySelector('#ChangedInstanceSubpropertyTestFixtureInstance')
+              assert.isDefined(instance, 'expected div#ChangedInstanceSubpropertyTestFixtureInstance to be defined')
+              assert.equal(instance.innerHTML, p1Value, `expected prop2.p1 value '${p1Value}' to be stamped into div#ChangedInstanceSubpropertyTestFixtureInstance`)
               done()
             })
           })

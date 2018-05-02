@@ -16,9 +16,14 @@
 
     // effect to forward owner (element) property to data host (template)
     const createForwardOwnerPropEffect = () => {
-      return function forwardOwnerProp(inst, prop, props) {
-        let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost
-        dataHost.set('_host_' + prop, props[prop])
+      return function forwardOwnerProp(inst, prop, props, oldProps, info, hasPaths) {
+        let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost,
+            hostProp = '_host_' + prop
+        dataHost.set(hostProp, props[prop])
+        // TO DO this has the beneficial effect of propagating at least some
+        //   object changes; but no idea whether it's really a good idea
+        if (dataHost._shouldPropertyChange(hostProp, props[prop], oldProps[prop]))
+          dataHost.notifyPath(hostProp)
         // dataHost._setPendingPropertyOrPath('_host_' + prop, props[prop], true, false)
           // this doesn't work -- the pending change never gets run
       }
@@ -40,6 +45,13 @@
      * define a collection of properties, and associated behaviors and
      * effects, but allow the user to specify the content of the
      * container.
+     *
+     * It's not clear whether mutations to object-valued properties are
+     * propagated correctly in all cases. (The objects get shared
+     * between the container and its content template; the sharing makes
+     * it hard to get Polymer to see changes.) If making a change
+     * programmatically, using the `notifyPath()` method after modifying
+     * a subproperty seems to help.
      *
      * The body of the element (its light DOM) should consist of a
      * single `<template>` element. The mixin will templatize it, stamp
