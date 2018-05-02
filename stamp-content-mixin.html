@@ -133,8 +133,12 @@
                   // TODO: is this right?
               },
               TemplateInstance = Polymer.Templatize.templatize(template, this, options)
-          if (this.effects)
-            Object.assign(TemplateInstance.prototype, this.effects)
+          if (this.effects) {
+            let props = Object.getOwnPropertyDescriptors(this.effects)
+            for (let prop in props)
+              props[prop].enumerable = false
+            Object.defineProperties(TemplateInstance.prototype, props)
+          }
           return TemplateInstance
         }
 
