@@ -14,26 +14,42 @@
         (node.nodeName === name)
     }
 
+    const splitPath = (path) => {
+      return path.split('.')
+    }
+    const isSplicePath = (path) => {
+      if (path.length < 2) return false
+      let last = path[path.length - 1]
+      return (last === 'splice') || (last === 'length')
+    }
+
     // effect to forward owner (element) property to data host (template)
     const createForwardOwnerPropEffect = () => {
       return function forwardOwnerProp(inst, prop, props, oldProps, info, hasPaths) {
-        let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost,
-            hostProp = '_host_' + prop
-        dataHost.set(hostProp, props[prop])
-        // TO DO this has the beneficial effect of propagating at least some
-        //   object changes; but no idea whether it's really a good idea
-        if (dataHost._shouldPropertyChange(hostProp, props[prop], oldProps[prop]))
-          dataHost.notifyPath(hostProp)
-        // dataHost._setPendingPropertyOrPath('_host_' + prop, props[prop], true, false)
-          // this doesn't work -- the pending change never gets run
+        let path = splitPath(prop)
+        if (!isSplicePath(path)) {
+          let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost
+          path[0] = '_host_' + path[0]
+          dataHost.set(path, props[prop])
+          // TO DO this has the beneficial effect of propagating at least some
+          //   object changes; but no idea whether it's really a good idea
+          if (dataHost._shouldPropertyChange(path, props[prop], oldProps[prop]))
+            dataHost.notifyPath(path)
+          // dataHost._setPendingPropertyOrPath(path, props[prop], true, false)
+            // this doesn't work -- the pending change never gets run
+        }
       }
     }
 
     // effect to forward instance property to data host (template)
     const createForwardInstancePropEffect = () => {
-      return function forwardInstanceProp(inst, prop, props) {
-        let dataHost = inst.__dataHost
-        dataHost.set('_host_' + prop, props[prop])
+      return function forwardInstanceProp(inst, prop, props, oldProps, info, hasPaths) {
+        let path = splitPath(prop)
+        if (!isSplicePath(path)) {
+          let dataHost = inst.__dataHost
+          path[0] = '_host_' + path[0]
+          dataHost.set(path, props[prop])
+        }
       }
     }
 
