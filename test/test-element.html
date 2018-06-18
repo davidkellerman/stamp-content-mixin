@@ -18,13 +18,15 @@
         prop2: {
           type: Object,
           value: () => { return {} }
-        }
+        },
+        prop3: Boolean
       }
     }
 
     get effects() {
       return {
-        uppercase(str) { return (str || '').toUpperCase() }
+        uppercase(str) { return (str || '').toUpperCase() },
+        booleanText(val, trueText, falseText) { return (val ? trueText : falseText) || '' }
       }
     }
 

@@ -65,6 +65,16 @@
       </template>
     </test-fixture>
 
+    <test-fixture id="AnotherEffectTestFixture">
+      <template>
+        <test-element id="AnotherEffectTestFixtureElement">
+          <template>
+            <div id="AnotherEffectTestFixtureInstance">{{booleanText(prop3, 'true text', 'false text')}}</div>
+          </template>
+        </test-element>
+      </template>
+    </test-fixture>
+
     <test-fixture id="BasicSubpropertyTestFixture">
       <template>
         <test-element>
@@ -107,6 +117,8 @@
     </test-fixture>
 
     <script>
+      /* global assert: false, fixture: false, flush: false, test: false, suite: false */
+
       suite('stamp-content-mixin', () => {
 
         test('instantiating the element with default properties works', (done) => {
@@ -120,7 +132,7 @@
               done()
             })
           })
-        });
+        })
 
         test('defining a property on the element works', (done) => {
           let element = fixture('DefinedPropertyTestFixture'),
@@ -134,7 +146,7 @@
               done()
             })
           })
-        });
+        })
 
         test('changing a property on the element works', (done) => {
           let element = fixture('ChangedPropertyTestFixture'),
@@ -149,7 +161,7 @@
               done()
             })
           })
-        });
+        })
 
         test('changing a property on the instance works', (done) => {
           let element = fixture('ChangedInstancePropertyTestFixture'),
@@ -168,7 +180,7 @@
               done()
             })
           })
-        });
+        })
 
         test('a property effect works', (done) => {
           let element = fixture('EffectTestFixture'),
@@ -181,7 +193,29 @@
               done()
             })
           })
-        });
+        })
+
+        test('a multi-parameter property effect works', (done) => {
+          let element = fixture('AnotherEffectTestFixture'),
+              emptyTextValue = ' ',
+              falseTextValue = 'false text',
+              trueTextValue = 'true text'
+          element.whenConnected(() => {
+            flush(() => {
+              let instance = document.querySelector('#AnotherEffectTestFixtureInstance'),
+                  element = document.querySelector('#AnotherEffectTestFixtureElement')
+              assert.isDefined(instance, 'expected div#AnotherEffectTestFixtureInstance to be defined')
+              // note: booleanText(val, trueText, falseText) effect isn't invoked
+              // until val is defined, if trueText and falseText are literal values
+              assert.equal(instance.innerHTML, emptyTextValue, `expected empty text value '${emptyTextValue}' to be stamped into div#EffectTestFixtureInstance`)
+              element.prop3 = true
+              assert.equal(instance.innerHTML, trueTextValue, `expected true text value '${trueTextValue}' to be stamped into div#EffectTestFixtureInstance`)
+              element.prop3 = false
+              assert.equal(instance.innerHTML, falseTextValue, `expected false text value '${falseTextValue}' to be stamped into div#EffectTestFixtureInstance`)
+              done()
+            })
+          })
+        })
 
         test('instantiating the element with default sub-properties works', (done) => {
           let element = fixture('BasicSubpropertyTestFixture')
@@ -194,7 +228,7 @@
               done()
             })
           })
-        });
+        })
 
         test('defining a sub-property on the element works', (done) => {
           let element = fixture('DefinedSubpropertyTestFixture'),
@@ -208,7 +242,7 @@
               done()
             })
           })
-        });
+        })
 
         test('changing a sub-property on the element works', (done) => {
           let element = fixture('ChangedSubpropertyTestFixture'),
@@ -225,7 +259,7 @@
               done()
             })
           })
-        });
+        })
 
         test('changing a sub-property on the instance works', (done) => {
           let element = fixture('ChangedInstanceSubpropertyTestFixture'),
@@ -235,7 +269,6 @@
                 setter = document.querySelector('#ChangedInstanceSubpropertyTestFixtureSetter'),
                 dataHost = element.__stampContentContext.TemplateInstance.prototype.__dataHost,
                 model = Polymer.Templatize.modelForElement(dataHost, instance)
-debugger;
             setter.notifyingProp = p1Value
             flush(() => {
               assert.equal(element.prop2.p1, p1Value)
@@ -245,9 +278,9 @@ debugger;
               done()
             })
           })
-        });
+        })
 
-      });
+      })
     </script>
 
   </body>
