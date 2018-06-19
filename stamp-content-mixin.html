@@ -178,6 +178,8 @@
                     if (path[path.length - 1] === 'splices') {
                       path.length -= 1
                       if (instance) instance.notifySplices(path, value.indexSplices)
+                      // notify owner of splices
+                      this.notifySplices(path, value.indexSplices)
                     }
                   }
                   else {
