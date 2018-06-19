@@ -23,6 +23,15 @@
       return (last === 'splices') || (last === 'length')
     }
 
+    const beginForwarding = (ctx, source) => {
+      if (ctx.forwardingSource === source) return false
+      if (!ctx.forwardingSource) ctx.forwardingSource = source
+      return true
+    }
+    const endForwarding = (ctx, source) => {
+      if (ctx.forwardingSource === source) delete ctx.forwardingSource
+    }
+
     // effect to forward owner (element) property to data host (template)
     const createForwardOwnerPropEffect = () => {
       return function forwardOwnerProp(inst, prop, props, oldProps, info, hasPaths) {
@@ -51,7 +60,9 @@
     const createForwardInstancePropEffect = () => {
       return function forwardInstanceProp(inst, prop, props, oldProps, info, hasPaths) {
         let dataHost = inst.__dataHost,
-            path = splitPath(prop)
+            context = dataHost.__templatizeOwner.__stampContentContext
+        if (!beginForwarding(context, 'instance')) return
+        let path = splitPath(prop)
         path[0] = '_host_' + path[0]
         if (isSpecialPath(path)) {
           if (path[path.length - 1] === 'splices') {
@@ -62,6 +73,7 @@
         else {
           dataHost.set(path, props[prop])
         }
+        endForwarding(context, 'instance')
       }
     }
 
@@ -158,8 +170,10 @@
                 // TODO: may need to set mutableData: true (dom-if does)
                 forwardHostProp(prop, value) { // this == element when invoked
                   // this is actually forwarding a template property to the instance
-                  let instance = this.__stampContentContext.instance,
-                      path = splitPath(prop)
+                  let context = this.__stampContentContext
+                  if (!beginForwarding(context, 'template')) return
+                  let path = splitPath(prop),
+                      instance = context.instance
                   if (isSpecialPath(path)) {
                     if (path[path.length - 1] === 'splices') {
                       path.length -= 1
@@ -171,6 +185,7 @@
                     // forward template property to owner
                     this.set(prop, value)
                   }
+                  endForwarding(context, 'template')
                 },
                 // TODO: not clear this ever gets invoked, since instanceProps is empty
                 notifyInstanceProp(instance, prop, value) { // this == element when invoked
