@@ -24,12 +24,14 @@
     }
 
     const beginForwarding = (ctx, source) => {
-      if (ctx.forwardingSource === source) return false
-      if (!ctx.forwardingSource) ctx.forwardingSource = source
+      let sources = ctx.forwardingSources || (ctx.forwardingSources = {})
+      if (sources[source]) return false
+      sources[source] = true
       return true
     }
     const endForwarding = (ctx, source) => {
-      if (ctx.forwardingSource === source) delete ctx.forwardingSource
+      let sources = ctx.forwardingSources
+      delete sources[source]
     }
 
     // effect to forward owner (element) property to data host (template)
