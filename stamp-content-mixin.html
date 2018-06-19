@@ -17,19 +17,23 @@
     const splitPath = (path) => {
       return path.split('.')
     }
-    const isSplicePath = (path) => {
+    const isSpecialPath = (path) => {
       if (path.length < 2) return false
       let last = path[path.length - 1]
-      return (last === 'splice') || (last === 'length')
+      return (last === 'splices') || (last === 'length')
     }
 
     // effect to forward owner (element) property to data host (template)
     const createForwardOwnerPropEffect = () => {
       return function forwardOwnerProp(inst, prop, props, oldProps, info, hasPaths) {
-        let path = splitPath(prop)
-        if (!isSplicePath(path)) {
-          let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost
-          path[0] = '_host_' + path[0]
+        let dataHost = inst.__stampContentContext.TemplateInstance.prototype.__dataHost,
+            path = splitPath(prop)
+        path[0] = '_host_' + path[0]
+        if (isSpecialPath(path)) {
+          if (path[path.length - 1] === 'splices')
+            dataHost.notifySplices(path, props[prop].indexSplices)
+        }
+        else {
           dataHost.set(path, props[prop])
           // TO DO this has the beneficial effect of propagating at least some
           //   object changes; but no idea whether it's really a good idea
@@ -44,10 +48,14 @@
     // effect to forward instance property to data host (template)
     const createForwardInstancePropEffect = () => {
       return function forwardInstanceProp(inst, prop, props, oldProps, info, hasPaths) {
-        let path = splitPath(prop)
-        if (!isSplicePath(path)) {
-          let dataHost = inst.__dataHost
-          path[0] = '_host_' + path[0]
+        let dataHost = inst.__dataHost,
+            path = splitPath(prop)
+        path[0] = '_host_' + path[0]
+        if (isSpecialPath(path)) {
+          if (path[path.length - 1] === 'splices')
+            dataHost.notifySplices(path, props[prop].indexSplices)
+        }
+        else {
           dataHost.set(path, props[prop])
         }
       }
