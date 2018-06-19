@@ -162,9 +162,8 @@
                       path = splitPath(prop)
                   if (isSpecialPath(path)) {
                     if (path[path.length - 1] === 'splices') {
-                      if (instance) instance.forwardHostProp(prop, value)
-                      // path.length -= 1
-                      // dataHost.notifySplices(path, props[prop].indexSplices)
+                      path.length -= 1
+                      if (instance) instance.notifySplices(path, value.indexSplices)
                     }
                   }
                   else {
