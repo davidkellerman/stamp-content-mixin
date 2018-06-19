@@ -1,5 +1,6 @@
 {
   "name": "stamp-content-mixin",
+  "version": "1.0.0",
   "description": "Mixin to stamp the element content into the document using the element as the binding scope.",
   "main": "stamp-content-mixin.html",
   "dependencies": {
