@@ -63,19 +63,19 @@
       return function forwardInstanceProp(inst, prop, props, oldProps, info, hasPaths) {
         let dataHost = inst.__dataHost,
             context = dataHost.__templatizeOwner.__stampContentContext
-        if (!beginForwarding(context, 'instance')) return
         let path = splitPath(prop)
         path[0] = '_host_' + path[0]
         if (isSpecialPath(path)) {
+          if (!beginForwarding(context, 'instance')) return
           if (path[path.length - 1] === 'splices') {
             path.length -= 1
             dataHost.notifySplices(path, props[prop].indexSplices)
           }
+          endForwarding(context, 'instance')
         }
         else {
           dataHost.set(path, props[prop])
         }
-        endForwarding(context, 'instance')
       }
     }
 
@@ -173,23 +173,23 @@
                 forwardHostProp(prop, value) { // this == element when invoked
                   // this is actually forwarding a template property to the instance
                   let context = this.__stampContentContext
-                  if (!beginForwarding(context, 'template')) return
                   let path = splitPath(prop),
                       instance = context.instance
                   if (isSpecialPath(path)) {
+                    if (!beginForwarding(context, 'template')) return
                     if (path[path.length - 1] === 'splices') {
                       path.length -= 1
                       if (instance) instance.notifySplices(path, value.indexSplices)
                       // notify owner of splices
                       this.notifySplices(path, value.indexSplices)
                     }
+                    endForwarding(context, 'template')
                   }
                   else {
                     if (instance) instance.forwardHostProp(prop, value)
                     // forward template property to owner
                     this.set(prop, value)
                   }
-                  endForwarding(context, 'template')
                 },
                 // TODO: not clear this ever gets invoked, since instanceProps is empty
                 notifyInstanceProp(instance, prop, value) { // this == element when invoked
